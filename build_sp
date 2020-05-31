@@ -8,7 +8,7 @@
 cd $WDR
 GDR=$(readlink -f $GEN_DIR)
 echo "$package option activated"
-echo "$WDR is present directory" 
+echo "$WDR is present directory"
 echo "$GDR is the genomes directory"
 echo "$ODR is the output directory"
 
@@ -46,21 +46,21 @@ exec 2>&3
 
 cd $ODR
 
-if [[ ! -s num_of_contigs.txt ]]; then 
+if [[ ! -s num_of_contigs.txt ]]; then
 echo "ERROR: Appropriate fasta files not found in Genomes directory"
 exit 1
 fi
 
 awk '$2 == 1' num_of_contigs.txt | cut -f1 > reference_genomes.txt
-awk 'FNR==NR { a[$NF]; next } !($NF in a)' reference_genomes.txt <(cut -f1 num_of_contigs.txt ) >  draft_genomes.txt 
+awk 'FNR==NR { a[$NF]; next } !($NF in a)' reference_genomes.txt <(cut -f1 num_of_contigs.txt ) >  draft_genomes.txt
 
 rm num_of_contigs.txt
 rm genomes.txt
 mkdir reordered_contigs
 #################################################
 
-if [ -s reference_genomes.txt ]; then 
-echo "Complete reference genome(s) detected" 
+if [ -s reference_genomes.txt ]; then
+echo "Complete reference genome(s) detected"
 else
 echo "ERROR: At least, a complete reference genome is required to reorder contigs of draft genomes"
 rm reference_genomes.txt draft_genomes.txt
@@ -93,7 +93,7 @@ done
 
 ###### User defined Representative genome
 if [ "x$REPGEN" != "x" ]; then
- grep -P '(^|\s)\K'$REPGEN'(?=\s|$)' temp.dnaA_output.txt | awk  '{printf "%s\t%4.3f\n", $1 , $2/$3 }'  > dnaA_output.txt 
+ grep -P '(^|\s)\K'$REPGEN'(?=\s|$)' temp.dnaA_output.txt | awk  '{printf "%s\t%4.3f\n", $1 , $2/$3 }'  > dnaA_output.txt
 else
 awk  '{printf "%s\t%4.3f\n", $1 , $2/$3 }' temp.dnaA_output.txt | sort -n -k2,2 | head -1 > dnaA_output.txt
 fi
@@ -120,7 +120,7 @@ echo "Number of draft genomes = $no_of_draft_genomes" >> log.txt
 echo "Selected representative genome is $repGenome" >> log.txt
 echo "dnaA position relative to ori is $dnaA_pos " >> log.txt
 echo " " >> log.txt
- 
+
 if [ -s draft_genomes.txt ]; then
 ############## Reorder contigs using Mauve ###########################
 echo "####### RE-ORDERING CONTIGS OF DRAFT GENOME(S) (MAUVE)#####
@@ -205,7 +205,7 @@ FastTree -nt -quiet -gtr $ODR/Roary/core_gene_alignment.aln > tree.newick || exi
 ######## If -e flag is chosen ######
 if [ "$REF_ONLY" == "true" ]; then
 Rscript $SMEG_DIR/create_clusters.R -i clusterOutput.txt -c 0
-cp $ODR/Roary/core_alignment_header.embl . 
+cp $ODR/Roary/core_alignment_header.embl .
 cp $ODR/Roary/core_gene_alignment.aln .
 if [ "$KEEP" == "false" ]; then
 rm -rf $ODR/Roary
@@ -216,7 +216,7 @@ fi
 
 ############ Now build SMEG database ########
 cp reordered_contigs/$repGenome.fna .
- 
+
 echo "####### BUILDING SMEG DATABASE(S) #####
 "
 
@@ -229,7 +229,7 @@ count=0
 fi
 
 touch breakCluster.txt
-until [ ! \$count -lt 3 ]
+until [ ! \$count -lt 2 ]
 do
 Rscript $SMEG_DIR/create_clusters.R -i clusterOutput.txt -c 0
 
@@ -307,16 +307,18 @@ samtools faidx $repGenome.fna
 cp $ODR/Roary/core_alignment_header.embl .
 cp $ODR/Roary/core_gene_alignment.aln .
 
-awk -F'\t' 'NR==FNR{c[\$1]++;next};c[\$2] > 0' <(grep -w -v -f <(cat clusters.txt | rev | cut -d'.' -f3 | rev | cut -c8-) <(cut -f2 clusterOutput.txt)) clusterOutput.txt > clusters_with_no_unique_SNP.txt
-printf '1\ni\nStrain\tclusterID\n.\nw\n' | ed -s clusters_with_no_unique_SNP.txt
+awk -F'\t' 'NR==FNR{c[\$1]++;next};c[\$2] > 0' <(grep -w -v -f <(cat clusters.txt | rev | cut -d'.' -f3 | rev | cut -c8-) <(cut -f2 clusterOutput.txt)) clusterOutput.txt > clusters_with_no_unique_SNP_noHeader.txt
+echo -e "Strain\tclusterID" | cat - clusters_with_no_unique_SNP_noHeader.txt > clusters_with_no_unique_SNP.txt
+#printf '1\ni\nStrain\tclusterID\n.\nw\n' | ed -s clusters_with_no_unique_SNP.txt
+rm clusters_with_no_unique_SNP_noHeader.txt
 EOT
 
 if [ "$AUTO" == "false" ]; then
 echo "bash parallel.sh" >> parallel_commands
 else
 thresholds=$(echo "0.4 0.5 0.6 0.7 0.8 0.9")
-for z in `echo $thresholds` 
-do 
+for z in `echo $thresholds`
+do
 sed "s/clusterOutput.txt $NUM_THREAD $SAT/clusterOutput.txt $NUM_THREAD $z/g" parallel.sh | sed "s/\"$IGNORE_ITER\" ==/\"false\" ==/g" | sed "2i mkdir F.$z" | sed "3i cd F.$z" | sed "4i cp $ODR/tree.newick ." | sed "5i cp $ODR/$repGenome.fna ." > parallel.$z.F.sh
 sed "s/clusterOutput.txt $NUM_THREAD $SAT/clusterOutput.txt $NUM_THREAD $z/g" parallel.sh | sed "s/\"$IGNORE_ITER\" ==/\"true\" ==/g" | sed "2i mkdir T.$z" | sed "3i cd T.$z" | sed "4i cp $ODR/tree.newick ." | sed "5i cp $ODR/$repGenome.fna ." > parallel.$z.T.sh
 echo "bash parallel.$z.F.sh" >> parallel_commands
@@ -333,8 +335,8 @@ clusters_wo_uniq=$(sed '1d' clusters_with_no_unique_SNP.txt | cut -f2 | sort | u
 total_cluster_count=$(grep -c "." clusters.txt)
 
 echo "Total number of clusters = $total_cluster_count" >> log.txt
-echo "Could not generate unique SNPs for $clusters_wo_uniq clusters containing a total of $unclustered_strains_count strains" >> log.txt 
-echo "See clusters_with_no_unique_SNP.txt for more details" >> log.txt 
+echo "Could not generate unique SNPs for $clusters_wo_uniq clusters containing a total of $unclustered_strains_count strains" >> log.txt
+echo "See clusters_with_no_unique_SNP.txt for more details" >> log.txt
 echo " "
 else
 iterative_yes=$(echo "F.0.4 F.0.5 F.0.6 F.0.7 F.0.8 F.0.9")
@@ -354,7 +356,7 @@ echo "Median unique SNPs in clusters = $median_cluster_SNPs" >> log.txt
 echo "Could not generate unique SNPs for $clusters_wo_uniq clusters containing a total of $unclustered_strains_count strains" >> log.txt
 echo "See $ODR/$f/clusters_with_no_unique_SNP.txt for more details" >> log.txt
 echo "Database created with above parameters located in $ODR/$f " >> log.txt
-echo "################################################################################## 
+echo "##################################################################################
 
 " >> log.txt
 done
@@ -374,7 +376,7 @@ echo "Median unique SNPs in clusters = $median_cluster_SNPs" >> log.txt
 echo "Could not generate unique SNPs for $clusters_wo_uniq clusters containing a total of $unclustered_strains_count strains" >> log.txt
 echo "See $f/clusters_with_no_unique_SNP.txt for more details" >> log.txt
 echo "Database created with above parameters located in $ODR/$f " >> log.txt
-echo "################################################################################## 
+echo "##################################################################################
 
 " >> log.txt
 done
