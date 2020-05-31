@@ -176,9 +176,11 @@ rm $i.clusters.txt
 
 Rscript $SMEG_DIR/SNP_method.R -i $i.temp1.txt -c $COV_CUTOFF -d $dnaA -s $MIN_SNP
 
-awk -F'\t' '{ $2 = ($2 > 10 ? 1 : $2) } 1' OFS='\t' $i.temp1.txt | awk '$3 > '$COV_CUTOFF'' | sed "s/$i.//g" > $i.SMEG.txt
+awk -F'\t' '{ $2 = ($2 > 10 ? 1 : $2) } 1' OFS='\t' $i.temp1.txt | awk '$3 > '$COV_CUTOFF'' | sed "s/$i.//g" > $i.SMEG_tmp.txt
 rm $i.temp1.txt
-printf '1\ni\nCluster\tSMEG\tCoverage\tNo of SNPs\tSMEG range\n.\nw\n' | ed -s $i.SMEG.txt
+echo -e "Cluster\tSMEG\tCoverage\tNo of SNPs\tSMEG range" | cat - $i.SMEG_tmp.txt > $i.SMEG.txt
+rm $i.SMEG_tmp.txt
+#printf '1\ni\nCluster\tSMEG\tCoverage\tNo of SNPs\tSMEG range\n.\nw\n' | ed -s $i.SMEG.txt
 
 exec 3>&2
 exec 2> /dev/null
@@ -192,7 +194,10 @@ else
 rm $i.passed_clusters
 rm polymorphic.site.coverage2
 touch $i.SMEG.txt
-printf '1\ni\nCluster\tSMEG\tCoverage\tNo of SNPs\tSMEG range\n.\nw\n' | ed -s $i.SMEG.txt
+mv $i.SMEG.txt $i.SMEG_tmp.txt
+echo -e "Cluster\tSMEG\tCoverage\tNo of SNPs\tSMEG range" | cat - $i.SMEG_tmp.txt > $i.SMEG.txt
+rm $i.SMEG_tmp.txt
+#printf '1\ni\nCluster\tSMEG\tCoverage\tNo of SNPs\tSMEG range\n.\nw\n' | ed -s $i.SMEG.txt
 fi
 cp $i.SMEG.txt $ODR/. || exit 1
 cd $ODR
@@ -225,7 +230,9 @@ for f in `cat SMEG.genomes`
 do
 paste <(awk '$1 == "'$f'" {print $1}' SMEG.genomes ) <(awk '$1 == "'$f'" {print $2}' $i.txt )  >> $i.temp.merge.txt
 done
-printf '1\ni\nCluster\t'$i'\n.\nw\n' | ed -s $i.temp.merge.txt
+mv $i.temp.merge.txt $i.temp.merge_tmp.txt
+echo -e "Cluster\t${i}" | cat - $i.temp.merge_tmp.txt > $i.temp.merge.txt
+#printf '1\ni\nCluster\t'$i'\n.\nw\n' | ed -s $i.temp.merge.txt
 done
 
 for f in *.temp.merge.txt
@@ -234,7 +241,9 @@ cut -f2 $f > $f.tmp
 rm $f
 done
 
-printf '1\ni\nCluster\n.\nw\n' | ed -s SMEG.genomes
+mv SMEG.genomes SMEG.genomes_tmp
+echo -e "Cluster" | cat - SMEG.genomes_tmp > SMEG.genomes
+#printf '1\ni\nCluster\n.\nw\n' | ed -s SMEG.genomes
 paste -d'\t' SMEG.genomes *.temp.merge.txt.tmp > merged_table.txt
 rm *.temp.merge.txt.tmp
 rm SMEG_list.txt
