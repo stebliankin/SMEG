@@ -232,6 +232,7 @@ paste <(awk '$1 == "'$f'" {print $1}' SMEG.genomes ) <(awk '$1 == "'$f'" {print 
 done
 mv $i.temp.merge.txt $i.temp.merge_tmp.txt
 echo -e "Cluster\t${i}" | cat - $i.temp.merge_tmp.txt > $i.temp.merge.txt
+rm $i.temp.merge_tmp.txt
 #printf '1\ni\nCluster\t'$i'\n.\nw\n' | ed -s $i.temp.merge.txt
 done
 
